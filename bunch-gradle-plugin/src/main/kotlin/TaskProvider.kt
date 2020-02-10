@@ -59,7 +59,8 @@ fun getTasks(@Suppress("UNUSED_PARAMETER") p: PropertyProvider): List<TaskDescri
                 rule = bunch,
                 commitTitle = RESTORE_COMMIT_TITLE,
                 step = false,
-                doCleanup = false
+                doCleanup = false,
+                isNoCommit = false
             ))
         }
     }

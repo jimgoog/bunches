@@ -32,7 +32,8 @@ data class Settings(
     val rule: String,
     val commitTitle: String = RESTORE_COMMIT_TITLE,
     val step: Boolean,
-    val doCleanup: Boolean
+    val doCleanup: Boolean,
+    val isNoCommit: Boolean
 )
 
 typealias SwitchSettings = Settings
@@ -66,6 +67,8 @@ class SwitchCommand : BunchSubCommand(
             pattern.""".trimIndent()
     )
 
+    private val isNoCommit by option("--no-commit", help = "Do not commit changes. -m option will be ignored").flag()
+
     private val stepByStep by option(
         "--step",
         help = "Do switch step by step with intermediate commits after applying each step."
@@ -89,7 +92,8 @@ class SwitchCommand : BunchSubCommand(
             rule = rule,
             commitTitle = commitTitle,
             step = stepByStep,
-            doCleanup = cleanUp
+            doCleanup = cleanUp,
+            isNoCommit = isNoCommit
         )
 
         process { doSwitch(settings) }
@@ -118,9 +122,9 @@ fun doSwitch(settings: Settings) {
 
     if (suffixes.size != 1) {
         if (settings.step) {
-            doStepByStepSwitch(suffixes, settings.repoPath, settings.commitTitle)
+            doStepByStepSwitch(settings, suffixes, settings.repoPath, settings.commitTitle)
         } else {
-            doOneStepSwitch(suffixes, settings.repoPath, settings.commitTitle)
+            doOneStepSwitch(settings, suffixes, settings.repoPath, settings.commitTitle)
         }
     }
 
@@ -133,7 +137,7 @@ fun doSwitch(settings: Settings) {
     }
 }
 
-fun doStepByStepSwitch(suffixes: List<String>, repoPath: String, commitTitle: String) {
+fun doStepByStepSwitch(settings: Settings, suffixes: List<String>, repoPath: String, commitTitle: String) {
     val originBranchExtension = suffixes.first()
     val donorExtensionsInStepByStepOrder = suffixes.subList(1, suffixes.size).toSet()
 
@@ -222,6 +226,10 @@ fun doStepByStepSwitch(suffixes: List<String>, repoPath: String, commitTitle: St
             }
         }
 
+        if (settings.isNoCommit) {
+            return
+        }
+
         if (branchChanges.isNotEmpty()) {
             commitChanges(
                 repoPath,
@@ -233,7 +241,7 @@ fun doStepByStepSwitch(suffixes: List<String>, repoPath: String, commitTitle: St
     }
 }
 
-fun doOneStepSwitch(suffixes: List<String>, repoPath: String, commitTitle: String) {
+fun doOneStepSwitch(settings: Settings, suffixes: List<String>, repoPath: String, commitTitle: String) {
     val originBranchExtension = suffixes.first()
     val donorExtensionsPrioritized = suffixes.subList(1, suffixes.size).reversed().toSet()
 
@@ -327,6 +335,10 @@ fun doOneStepSwitch(suffixes: List<String>, repoPath: String, commitTitle: Strin
 
     if (changedFiles.isEmpty()) {
         exitWithError("No bunch files for switch found")
+    }
+
+    if (settings.isNoCommit) {
+        return
     }
 
     commitChanges(

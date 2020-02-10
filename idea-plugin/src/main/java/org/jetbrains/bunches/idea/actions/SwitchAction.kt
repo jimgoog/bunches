@@ -49,7 +49,8 @@ class SwitchAction : AnAction() {
             switchSettings.branch,
             switchSettings.commitMessage,
             switchSettings.stepByStep,
-            switchSettings.doCleanup
+            switchSettings.doCleanup,
+            false
         )
 
         ProgressManager.getInstance().run(
